@@ -267,6 +267,7 @@ def get_all_users(db):
 def update_all_transactions(db, client, user_id):
     items = get_user_access_tokens(db, user_id)
     error_happened = False
+    failed_item_ids = []
     for token, transactionCursor, cursorId, itemId in items:
         try:
             update_transactions(db, client, token,
@@ -274,13 +275,15 @@ def update_all_transactions(db, client, user_id):
         except Exception as e:
             print(f"Error: {e}")
             error_happened = True
-    return error_happened
+            failed_item_ids.append(itemId)
+    return error_happened, failed_item_ids
 
 
 def attempt_update_all_transactions(db, client, user):
     user_id = user['id']
-    error_happened = update_all_transactions(db, client, user_id)
-    return error_happened
+    error_happened, failed_item_ids = update_all_transactions(
+            db, client, user_id)
+    return error_happened, failed_item_ids
 
 
 def main():
@@ -289,17 +292,19 @@ def main():
     client = plaid_api.PlaidApi(api_client)
     users = get_all_users(db)
     any_errors = False
-    user_ids_with_errors = []
+    user_items_with_errors = []
     for user in users:
-        error = attempt_update_all_transactions(
+        error, failed_item_ids = attempt_update_all_transactions(
                 db, client, user)
         if error:
             any_errors = True
-            user_ids_with_errors.append(user['id'])
+            user_items = (f"userId {user['id']}, itemIds: "
+                          f"{', '.join(map(str, failed_item_ids))}")
+            user_items_with_errors.append(user_items)
     if any_errors:
         raise Exception("There were errors updating user transactions"
-                        " for users with ids:"
-                        f" {', '.join(map(str, user_ids_with_errors))}")
+                        " for user items:"
+                        f" {', '.join(user_items_with_errors)}")
 
     db.close()
 
