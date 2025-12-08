@@ -289,13 +289,17 @@ def main():
     client = plaid_api.PlaidApi(api_client)
     users = get_all_users(db)
     any_errors = False
+    user_ids_with_errors = []
     for user in users:
         error = attempt_update_all_transactions(
                 db, client, user)
         if error:
             any_errors = True
+            user_ids_with_errors.append(user['id'])
     if any_errors:
-        raise Exception("There were errors updating user transactions")
+        raise Exception("There were errors updating user transactions"
+                        " for users with ids:"
+                        f" {', '.join(user_ids_with_errors)}")
 
     db.close()
 
