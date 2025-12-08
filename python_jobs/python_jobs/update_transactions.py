@@ -299,7 +299,7 @@ def main():
     if any_errors:
         raise Exception("There were errors updating user transactions"
                         " for users with ids:"
-                        f" {', '.join(user_ids_with_errors)}")
+                        f" {', '.join(map(str, user_ids_with_errors))}")
 
     db.close()
 
